@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    驱动妖精 · 相机锁定 Z 轴诊断插件
+
+    目的：只读诊断。量化"相机看向多高"与"敌人身体在哪"的偏差，
+          为修复高度差下的相机偏移提供依据。
+    行为：不改任何游戏状态，只写日志。
+
+    构建（路径由环境变量注入）：
+      $env:AIDEALRAYS_ROOT   = '<游戏根>'
+      $env:AIDEALRAYS_DEPLOY = '1'      # 想自动部署到 BepInEx\plugins 才设
+      dotnet build -c Release
+  -->
+
+  <Import Project="..\Common.props" />
+
+  <PropertyGroup>
+    <AssemblyName>AidealRays.CameraDiag</AssemblyName>
+    <RootNamespace>AidealRays.CamDiag</RootNamespace>
+  </PropertyGroup>
+
+</Project>

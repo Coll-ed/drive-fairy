@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    加力（疾飞）取证探针 —— 独立工程，**只读+可控点火**，不参与正式功能。
+
+    存在理由（交接说明第五节·证据前置）：
+      `PlayerControlCustom.ForceBooston()` 的方法体在 IL2CPP 下不可读
+      （Cpp2IL / ilspycmd 都只能拿到 `ldnull/throw` 桩，已实测复核），
+      因此"加力到底改了哪些数值"只能靠**运行期观测**回答。
+
+    与正式插件的关系：
+      · 本工程**不修改** AidealRays.Flight 的任何代码；
+      · 它自己点火（固定帧数自动调 ForceBooston/off），**不需要人按键**，
+        满足《AI会话工作约束》三·6「禁止让人替你产生数据」；
+      · 产物默认不部署到 BepInEx\plugins（由构建脚本按需部署）。
+  -->
+
+  <Import Project="..\Common.props" />
+
+  <PropertyGroup>
+    <AssemblyName>AidealRays.BoostProbe</AssemblyName>
+    <RootNamespace>AidealRays.BoostProbe</RootNamespace>
+    <!-- 探针允许用反射读 protected 字段，不需要 unsafe -->
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

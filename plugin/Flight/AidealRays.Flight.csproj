@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    驱动妖精 AI-deal-Rays · 3D 飞行插件
+
+    功能：空格上升 / 左Shift下降，直写 Transform.position.y。
+          原理与踩坑记录见 ../FLIGHT_DONE.md 与 FLIGHT_PHASE1.md。
+
+    公共配置（目标框架、dll 引用、部署逻辑）统一在 ..\Common.props，
+    本文件只声明本项目特有的属性。
+
+    构建：
+      $env:AIDEALRAYS_ROOT   = '<游戏根>'
+      $env:AIDEALRAYS_DEPLOY = '1'      # 想自动部署到 BepInEx\plugins 才设
+      dotnet build -c Release
+  -->
+
+  <Import Project="..\Common.props" />
+
+  <PropertyGroup>
+    <AssemblyName>AidealRays.Flight</AssemblyName>
+    <RootNamespace>AidealRays.Flight</RootNamespace>
+  </PropertyGroup>
+
+  <!--
+    注意：UnityEngine.PhysicsModule 也被 Flight 引用过（历史原因，用于一次失败的
+    CharacterController 尝试）。现在不再使用该类型，但 Common.props 统一引用了它，
+    留着无害且避免两个工程引用集不一致。
+  -->
+
+</Project>

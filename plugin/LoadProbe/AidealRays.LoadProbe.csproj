@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    驱动妖精 · 加载探针插件
+
+    作用：在游戏内部建立"心跳"，判定加载慢是"主循环还在推进"还是"真被阻塞"，
+          并记录长帧、场景切换、内存骤降、焦点变化。
+    行为：只读 + 独立日志，不改游戏状态。
+
+    公共配置（目标框架、dll 引用、部署逻辑）统一在 ..\Common.props。
+
+    构建：
+      $env:AIDEALRAYS_ROOT   = '<游戏根>'
+      $env:AIDEALRAYS_DEPLOY = '1'      # 想自动部署到 BepInEx\plugins 才设
+      dotnet build -c Release
+  -->
+
+  <Import Project="..\Common.props" />
+
+  <PropertyGroup>
+    <AssemblyName>AidealRays.LoadProbe</AssemblyName>
+    <RootNamespace>AidealRays.LoadProbe</RootNamespace>
+  </PropertyGroup>
+
+</Project>

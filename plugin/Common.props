@@ -1,0 +1,143 @@
+<!--
+  驱动妖精 mod 工程公共配置（单一来源）
+
+  被各插件工程 Import。这里集中定义：
+    · 目标框架与语言选项
+    · BepInEx / interop 程序集的引用（路径全部外置，工程内不含绝对路径）
+    · 可选的构建后部署
+
+  路径来源（优先环境变量，其次同名 MSBuild 属性）：
+    AIDEALRAYS_ROOT    游戏根目录（含 BepInEx\ 与 AldealRaysR18_Data\）
+    AIDEALRAYS_DEPLOY  置为 1 时，构建后自动复制到 BepInEx\plugins
+
+  为什么不用 NuGet：这些 dll 就是运行时真正加载的程序集，版本天然一致；
+  且 BepInEx.Unity.IL2CPP 只发布在 BepInEx 自有 NuGet 源，nuget.org 主源上没有。
+-->
+<Project>
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- 只引用本地 dll，关闭隐式包还原，避免误拉同名包造成版本冲突 -->
+    <RestorePackages>false</RestorePackages>
+    <DisableImplicitNuGetFallbackFolder>true</DisableImplicitNuGetFallbackFolder>
+    <NoWarn>$(NoWarn);CS0436</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <GameRoot Condition="'$(GameRoot)' == ''">$(AIDEALRAYS_ROOT)</GameRoot>
+    <BepInExCoreDir>$(GameRoot)\BepInEx\core</BepInExCoreDir>
+    <InteropDir>$(GameRoot)\BepInEx\interop</InteropDir>
+    <DeployEnabled Condition="'$(AIDEALRAYS_DEPLOY)' == '1'">true</DeployEnabled>
+    <DeployEnabled Condition="'$(AIDEALRAYS_DEPLOY)' != '1'">false</DeployEnabled>
+    <!-- 部署目录：各插件工程产出 dll 都放这里 -->
+    <PluginDeployDir>$(GameRoot)\BepInEx\plugins</PluginDeployDir>
+  </PropertyGroup>
+
+  <!-- 编译期校验：缺前置条件时给出明确指引，而不是一堆"找不到类型"的报错 -->
+  <Target Name="ValidateModEnvironment" BeforeTargets="ResolveReferences">
+    <Error Condition="'$(GameRoot)' == ''"
+           Text="未指定游戏根目录。请设置环境变量 AIDEALRAYS_ROOT，或传 -p:GameRoot=&lt;路径&gt;。" />
+    <Error Condition="!Exists('$(BepInExCoreDir)')"
+           Text="找不到 $(BepInExCoreDir) —— 请确认 BepInEx 6 已装到该游戏目录。" />
+    <Error Condition="!Exists('$(InteropDir)\Assembly-CSharp.dll')"
+           Text="找不到 $(InteropDir)\Assembly-CSharp.dll —— 请先启动一次游戏以生成 interop 程序集。" />
+  </Target>
+
+  <ItemGroup>
+    <!-- BepInEx 6 运行时 -->
+    <Reference Include="BepInEx.Core">
+      <HintPath>$(BepInExCoreDir)\BepInEx.Core.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="BepInEx.Unity.IL2CPP">
+      <HintPath>$(BepInExCoreDir)\BepInEx.Unity.IL2CPP.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="BepInEx.Unity.Common">
+      <HintPath>$(BepInExCoreDir)\BepInEx.Unity.Common.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>$(BepInExCoreDir)\0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppInterop.Runtime">
+      <HintPath>$(BepInExCoreDir)\Il2CppInterop.Runtime.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppInterop.Common">
+      <HintPath>$(BepInExCoreDir)\Il2CppInterop.Common.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <!-- IL2CPP 的 BCL 替代程序集。必须引用：interop 类型体系基于 Il2CppSystem，
+         缺它会出现 CS0012「类型 Object 在未引用的程序集中定义」。 -->
+    <Reference Include="Il2Cppmscorlib">
+      <HintPath>$(InteropDir)\Il2Cppmscorlib.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppSystem">
+      <HintPath>$(InteropDir)\Il2CppSystem.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Il2CppSystem.Core">
+      <HintPath>$(InteropDir)\Il2CppSystem.Core.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <!-- 游戏程序集 -->
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(InteropDir)\Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <!-- Unity interop：类型归属已逐一确认（CoreModule 里没有同名类型，无命名冲突） -->
+    <Reference Include="UnityEngine.CoreModule">
+      <HintPath>$(InteropDir)\UnityEngine.CoreModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.InputLegacyModule">
+      <HintPath>$(InteropDir)\UnityEngine.InputLegacyModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="UnityEngine.PhysicsModule">
+      <HintPath>$(InteropDir)\UnityEngine.PhysicsModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- PlayableDirector（Timeline 演出驱动）。技能配置里的 DashTimeline /
+         BurstTimeline / DrainTimeline 都是它，读这些字段就必须引用本程序集。 -->
+    <Reference Include="UnityEngine.DirectorModule">
+      <HintPath>$(InteropDir)\UnityEngine.DirectorModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- Animator：BattleManager.LockonDisp 的类型。读"锁定显示"对象需要它。 -->
+    <Reference Include="UnityEngine.AnimationModule">
+      <HintPath>$(InteropDir)\UnityEngine.AnimationModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- UnityEngine.UI：PointerInputModule 等 uGUI 类型。
+         虚拟光标 `Michsky.UI.Shift.VirtualCursor : PointerInputModule` 需要它才能被引用。 -->
+    <Reference Include="UnityEngine.UI">
+      <HintPath>$(InteropDir)\UnityEngine.UI.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <!-- Cinemachine：相机锁定/缩放。关键类型归属已确认：
+         CinemachineBrain.LateUpdate 是"所有相机计算完成"的挂载点，
+         CinemachineVirtualCamera.m_LookAt / m_Lens / m_State 用于读取落点。 -->
+    <Reference Include="Cinemachine">
+      <HintPath>$(InteropDir)\Cinemachine.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <!-- 构建后部署：仅在显式开启时执行 -->
+  <Target Name="DeployModToPlugins" AfterTargets="Build" Condition="'$(DeployEnabled)' == 'true'">
+    <MakeDir Directories="$(PluginDeployDir)" />
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(PluginDeployDir)" />
+    <Message Importance="high" Text="已部署: $(PluginDeployDir)\$(TargetFileName)" />
+  </Target>
+
+</Project>
